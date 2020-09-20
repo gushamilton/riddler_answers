@@ -1,0 +1,151 @@
+---
+title: "Riddler_guess_my_word"
+author: "Fergus Hamilton"
+date: "20/09/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+```
+
+So, this is my first attempt at solving the Riddler. It's real clunky, but I think I'm right. Firstly, let's simulate  the game. Set the dictionary up, then chose a random sample from the dictionary.
+
+```{r cars}
+dictionary <- (1:267751)
+
+working_dic <- dictionary
+
+upper_limit <- tail(working_dic, 1)
+lower_limit <- as.integer(working_dic[1])
+
+word_choice <- sample(dictionary, size = 1)
+```
+
+Then, using a for loop (old school), we progressively guess between the upper and lower limits. The most sensible way is to guess directly between them (forcing an integer). So the first guess is always in the middle of the dictionary. This will minimise guesses (I think)
+```{r pressure, echo=FALSE}
+for(i in 1:50) {
+  
+  
+  guess <-  as.integer((upper_limit+lower_limit)/2)
+
+  if(guess > word_choice) {
+   upper_limit <- guess
+}   else {
+    lower_limit <- guess
+}
+  if (guess == word_choice) {
+    print(i)
+    break
+  }
+
+
+}
+```
+
+Then, we can replicate this and put all in a function. 
+Then we replicate, 1 million times
+
+
+```{r, game}
+set_up_game <- function() {
+
+
+working_dic <- dictionary
+
+upper_limit <- tail(working_dic, 1)
+lower_limit <- as.integer(working_dic[1])
+
+word_choice <- sample(dictionary, size = 1)
+
+no_guesses <- 0
+
+while(guess != word_choice) {
+  
+  
+  guess <-  as.integer((upper_limit+lower_limit)/2)
+  
+  if(guess > word_choice) {
+    upper_limit <- guess
+  }   else {
+    lower_limit <- guess
+  }
+  
+  no_guesses = no_guesses + 1
+  
+  
+}
+return(no_guesses)
+}
+
+
+sample <- replicate(10e4, set_up_game())
+
+```
+
+Then we plot...
+
+```{r}
+
+
+plot <-as_tibble(sample)
+
+ggplot(plot) +
+  geom_histogram(aes(x = value)) +
+  xlim(10,20) +
+  xlab("Number of guesses")
+
+
+plot %>%
+  count(value)
+```
+
+Let's see how much worse it is to guess a random number between lower and upper limits. I think this is  really slow way of running a loop, but it works anyway.
+```{r}
+random_guess <- function() {
+
+
+working_dic <- dictionary
+
+upper_limit <- tail(working_dic, 1)
+lower_limit <- as.integer(working_dic[1])
+
+word_choice <- sample(dictionary, size = 1)
+
+no_guesses <- 0
+
+while(guess != word_choice){
+  
+  
+  guess <-  sample(lower_limit:upper_limit,1)
+  
+  if(guess > word_choice) {
+    upper_limit <- guess
+  }   else {
+    lower_limit <- guess
+  }
+no_guesses <- no_guesses + 1
+  
+}
+return(no_guesses)
+}
+sample <- replicate(10e4, random_guess())
+
+```
+
+So, it's much less efficent, about twice as many guesses.
+
+```{r}
+
+
+plot <-as_tibble(sample)
+
+ggplot(plot) +
+  geom_histogram(aes(x = value)) +
+  xlab("Number of guesses")
+
+
+plot %>%
+  count(value, sort = TRUE)
+```
+
